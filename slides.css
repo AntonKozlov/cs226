@@ -12,3 +12,13 @@
 .def {
 	font-style: italic;
 }
+
+.fitimg img {
+	max-width: 100%;
+}
+
+.sub {
+	font-size: .83em;
+	vertical-align: sub;
+}
+
