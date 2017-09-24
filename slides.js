@@ -14,19 +14,25 @@ const smap = [
 	[ "SS+SS", "\u253c"],
 ];
 
+const symap = [
+	[ "|-+", "S" ],
+];
+
+function symbclass(s) {
+	return symap.reduce(function(best, rule) {
+		return rule[0].includes(s) ? rule[1] : best;
+	}, "N");
+}
+
 function findmap(str) {
 	return smap.reduce(function(best, rule) {
 		const pat = rule[0];
 		const rep = rule[1];
 		const bestscore = best[1];
 		const matches = pat.split("").map(function(c, i) {
-			let sc = str[i];
-			if ("|-+".includes(sc)) {
-				sc = "S";
-			}
 			return Math.max(
 				c == "A" ? 1 : 0,
-				c == sc  ? 2 : 0,
+				c == symbclass(str[i]) ? 2 : 0,
 				c == str[i] && i == 2 ? 20 : 0);
 		});
 
