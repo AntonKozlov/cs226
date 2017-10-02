@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!--<title>My Awesome Presentation</title>-->
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <link rel="stylesheet" type="text/css" href="slides.css">
+    <script src="remark.min.js"></script>
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+# Операционные системы
+
+#### Взаимное исключение
+
+---
+# Состязательная ситуация
+
+.def[Состязательная ситуация] (состояние гонки, race condition) - одновременный доступ одному ресурсу, при котором конечный результат зависит от порядка исполнения.
+
+Пример: реализация `pipe`
+
+* Танненбаум, Современные ОС, 2.4
+* Herlihy, Shavit The Art of Multiprocessor Programming
+
+---
+# Взаимное исключение
+
+.def[Взаимное исключение] - подход для устранения состязательных ситуаций: предоставить гарантирию монопольного досутпа к ресурсу в течении некоторого времени.
+
+.def[Критическая секция] - участок программы, в котором гарантируюется монопольный доступ.
+
+Свойства взаимного исключения:
+* монопольный доступ
+* deadlock-freedom - если 2 процесса хотят завладеть ресурсом, то по крайней мере 1 преуспеет
+* starvation-freedom - если процесс хочет завладеть ресурсом, то когда-нибудь он преуспеет
+
+```
+	lock();
+	write_pipe();
+	unlock();
+	...
+	lock();
+	read_pipe();
+	unlock();
+```
+
+---
+# Выключение прерываний
+
+```
+lock() {
+	irq_disable();
+}
+
+unlock() {
+	irq_enable();
+}
+```
+
+НО:
+1. для коротких секций в ядре
+2. нельзя давать пользователю
+
+--
+
+ ---
+
+```
+lock() {
+	sched_disable();
+}
+
+unlock() {
+	sched_enable();
+}
+```
+
+
+---
+# Блокирующая переменная
+
+```
+bool locked = false;
+lock() {
+	while (locked);
+	locked = true;
+}
+
+unlock() {
+	locked = false;
+}
+```
+
+---
+# Блокирующая переменная
+
+```
+atomic test_and_set(ptr) {
+	bool old = *ptr
+	if (!*ptr) {
+		*ptr = true;
+	}
+	return old;
+}
+```
+
+```
+bool locked = 0;
+lock() {
+	while (test_and_set(&locked));
+	locked = 1
+}
+
+unlock() {
+	locked = 0;
+}
+```
+
+---
+# Алгоритмически
+
+#### lock 1
+
+```
+lock(self) { // 0 or 1
+	other = 1 - self
+	flag[self] = true
+	while (flag[other]);
+}
+
+unlock(self) {
+	flag[self] = false
+}
+```
+--
+
+#### lock 2
+
+```
+lock(self) {
+	victim = self
+	while (victim == self) {}
+}
+
+unlock(self) {
+}
+```
+
+---
+# Алгоритм Петерсона
+
+```
+lock(self) {
+	other = 1 - i
+	flag[self] = true
+	victim = self
+	while (victim == self && flag[other])
+}
+
+unlock(self) { 
+	flag[self] = false 
+}
+```
+
+НО (для блокирующей переменной): 
+1. ожидание активно
+2. проблема инверсии приоритета: 
+   * низкоприоритетный процесс исполненяется в критической секции
+   * просыпается высокоприоритеный процесс и пытается зайти в критическую секцию
+   * => deadlock или высокоприоритетный процесс оказывается вытеснен низкоприоритетным
+
+---
+# Семафор
+
+.def[Семафор] - примитив синхронизации операционной системы; позволяет создавать критическую секцию, в которой может находится не больше определённого количества процессов.
+
+Атомарные операции:
+* down - вход в критическую секцию. проверяет счетчик возможных процессов в секции:
+  * счётчик процессов больше 0:
+      * счетчик декрементируется
+      * процесс входит в критическую секцию
+  * счётчик равен 0:
+      * процесс засыпает, ожидая входа в секцию
+* up - выход из критической секции
+  * счётчик инкрементируется
+  * посылается сигнал пробуждения ожидающему входа процессу (или нескольким)
+
+.def[Mutex] - семафор, позволяющий 1 процесс в критической секции
+
+---
+
+```
+down(semaphore *s) {
+	sched_lock();
+	while (true) {
+		If (cnt > 0) {
+			--cnt;
+			return;
+		} else {
+			s->q->add(self);
+			sched_unlock_wait_relock();
+		}
+	}
+	sched_unlock()
+}
+
+
+```
+
+```
+up(semaphore *s) {
+	sched_lock();
+	++cnt;
+	other = s->q->pop();
+	If (other) {
+		wake(other);
+	}
+	sched_unlock();
+}
+	
+```
+Атомарность - с помощью низкоуровневых механизмов создания критических секций
+
+---
+# Монитор
+
+```
+	down(&sem)
+	write_pipe();
+	up(&sem);
+	...
+	down(&sem);
+	read_pipe();
+	up(&sem);
+```
+Программист:
+ * должен вызвать `up`
+ * количество вызовов `up` должно быть `<=` вызовов `down`
+
+.def[Монитор] - примитив синхронизации над объектом, в каждый момент времени монитором объекта владеет не более одного метода.
+
+```
+class Pipe {
+	public synchronized void write_pipe() {
+		...
+	}
+	public synchronized void read_pipe() {
+		...
+	}
+}
+```
+
+---
+# Барьер
+
+.def[Барьер] - примитив для синхронизации фаз исполнения
+
+```
+int pthread_barrier_init(pthread_barrier_t *restrict barrier,
+       const pthread_barrierattr_t *restrict attr, unsigned count);
+
+int pthread_barrier_wait(pthread_barrier_t *barrier);
+```
+    </textarea>
+    <script src="slides.js" type="text/javascript"></script>
+  </body>
+</html>
