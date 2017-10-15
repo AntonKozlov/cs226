@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!--<title>My Awesome Presentation</title>-->
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <link rel="stylesheet" type="text/css" href="slides.css">
+    <style>
+    .max300px img {
+            height : 400px;
+    }
+    </style>
+    <script src="remark.min.js"></script>
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+# Операционные системы
+
+#### Задачи взаимодействия процессов
+
+---
+# Литература
+
+* Танненбаум, Современные ОС, 2.5
+* Танненбаум, Современные ОС, 6
+* Дейтел, Введение в операционные системы, 6
+* P.J. Courtois, F. Heymans, and D.L. Parnas. Concurrent Control with "Readers" and "Writers"
+* V.Popov, O.Mazonka. Faster Fair Solution for the Reader-Writer Problem
+
+
+---
+### Задача обедающих философов
+
+.left[
+```asciidrawing
+
+    f      +-----+      f
+   +-+.....|  p  |.....+-+
+   +-+     |     |     +-+
+    .      +-----+      .
+    .                   .
+ +-----+             +-----+
+ |  p  |             |  p  |
+ |     |             |     |
+ +-----+             +-----+
+    .                   .
+    .      +-----+      .
+   +-+.....|  p  |.....+-+
+   +-+     |     |     +-+
+    f      +-----+      f
+```
+]
+
+* Несколько паралельных процессов _p_, каждый в одном из двух состояний
+* `state 1`: занимается локальной работой
+* `state 2`: использует 2 ресурса _f_
+* Процессы пересекаются по необходимым ресурсам
+
+Пример перехода между состояниями:
+```
+// state 1
+acquire left
+acquire right
+// state 2
+```
+
+Без синхронизации захват двух ресурсов приводит к deadlock'у.
+
+Как организовать синхронизацию между процессами?
+
+---
+# C глобальной синхронизацией
+
+```
+// state 1
+acquire m // глобальный mutex для системы
+acquire left
+acquire right
+// state 2
+release right
+release left
+release m
+// state 1
+```
+В один момент времени не более одного процесса получает доступ к ресурсам
+
+---
+# C дополнительной синхронизацией
+
+```
+// state 1
+acquire m
+sl = try_acquire left
+sr = try_acquire right
+release m
+if not (sl and sr):
+        if sr:
+                release right
+        if sl:
+                release left
+        wait
+else:
+        // state 2
+        release right
+        release left
+        wake process_left
+        wake process_right
+```
+---
+# Задача читателя/писателя
+
+Есть область памяти, позволяющая чтение и запись.
+
+Несколько процессов имеют к ней доступ на запись и чтение: при этом
+ * одновременно могут читать сколько угодно процессов
+ * писать — только один
+
+---
+# Приоритет читателям
+
+```
+int readcount = 0;
+mutex m = UNLOCKED, w = UNLOCKED;
+
+READER                   WRITER
+
+acquire m
+readcount += 1
+if readcount == 1:
+        acquire w
+release m
+                         acquire w
+... reading ...          ... writing ...
+                         release w
+acquire m
+readcount -= 1
+if readcount == 0:
+        release w
+release m
+```
+
+---
+# Приоритет писателям
+
+```
+int readcount = 0, writecount = 0;
+mutex m1 = UNLOCKED, m2 = UNLOCKED, m3 = UNLOCKED, w = UNLOCKED;
+
+READER                                  WRITER
+
+acquire m3                              acquire m2
+        acquire r                       writecount += 1
+                acquire m1              if writecount == 1:
+                readcount += 1                  acquire r
+                if readcount == 1:      release m2
+                        acquire w
+                release m1
+        release r
+release m3
+
+                                        acquire w
+... reading ...                         ... writing ...
+                                        release w
+
+acquire m1                              acquire m2
+readcount -= 1                          writecount -= 1
+if readcount == 0:                      if writecount == 0:
+        release w                               release r
+release m1                              release m2
+
+```
+???
+mutex 3 is necessary because of our absolute insistence on priority
+for writers. Without mutex 3 we have the possibility
+that a writer and one or more readers will be simul-
+taneously waiting for a V(r) to be done by a reader.
+In that event we could not guarantee priority to the
+writer, mutex 3 guarantees a reader exclusive access to
+the block of code from "P(r)" to "V(r)" inclusive. As
+a result there will be at most one process ever waiting
+at r, and the result of a V is clear.
+
+---
+# Честное распределение
+
+```
+int readcount = 0;
+mutex in = UNLOCKED, m = UNLOCKED, w = UNLOCKED;
+
+READER                                  WRITER
+
+acquire in                              acquire in
+        acquire m
+                readcount += 1
+                if readcount == 1
+                        acquire w
+        release m
+release in
+                                        acquire w
+... reading ...                         ... writing ...
+                                        release w
+                                        release in
+acquire m
+readcount -= 1
+if readcount == 0:
+        release w
+release m
+```
+
+---
+# Ресурсы и взаимоблокировки
+
+.def[Взаимоблокировка] (тупик, deadlock) - ...
+
+Пример:
+```
+process1() {            process2() {
+        acquire m1              acquire m2
+        acquire m2              acquire m1
+        ...                     ...
+        release m2              release m1
+        release m1              release m2
+}                       }
+```
+
+Ресурсы:
+* выгружаемые - можно "отобрать" у программы:
+  * процессор, память
+* невыгружаемые - если отобрать, приведёт к сбою:
+  * критические секции, устройства
+
+Во взаимоблокировках участвуют невыгружаемые ресурсы.
+
+---
+# Условия возникновения
+
+Коффман, Элфик и Шошани (1971): взаимоблокировка возникает, тогда и только когда выполняются все условия:
+* Взаимное исключение при работе с ресурсами
+* Удержание и запрос дополнительных ресурсов
+* Ресурсы невыгружаемы
+* Циклическое ожидание
+
+---
+# Предотвращение взаимоблокировок
+
+.def[Предотвращение] - гарантировать невозможность взаимоблокировки построением системы так, чтобы не выполнялось какое-либо из необходимых условий.
+
+Взаимное исключение:
+* Снизить количество процессов, занимающих ресурс
+* Минимизировать время удержания ресурса
+
+Удержание и запрос:
+* Запрашивать все ресурсы в начале работы
+  * нужно знать необходимое количество ресурсов
+  * неоптимальное использование ресуров
+
+---
+# Предотвращение взаимоблокировок (2)
+
+Невыгружаемость:
+* Процесс должен освобождать захваченные ресурсы если новый ресус не может быть захвачен
+  * неэффективно: приходится отдавать ресурс, затем захватывать снова
+  * голодание: нет гарантий успешного захвата на новой попытке
+
+Циклическое ожидание:
+* Позволять захватывать только 1 ресурс
+  * потеря производительности
+* Упорядочить захват ресурсов
+  * необходим общий порядок для всех, может не существовать
+
+---
+# Уклонение
+
+.def[Уклонение] - при возможности взаимоблокировки, не допускать её алгоритмически, например, с помощью политик удовлетворения запросов.
+
+Пример начальных условий:
+ * имеется фиксированное количество ресурсов одного типа
+ * фиксированное количество процессов
+ * известны максимальное количество ресурсов, используемых каждым процессом
+ * ресурсы освобождаются за конечное время
+
+Тогда, .def[состояние]:
+ * надёжное: существует порядок планирования, позволяющий всем процессам завершиться в течение конечного времени
+ * ненадёжное: в противном случае
+
+Из ненадёжного состояния в случае неблагоприятной последовательности событий можно попасть в взаимоблокировку (но не обязательно)
+
+---
+# Примеры состояний
+
+Надёжное
+
+   | Текущее | Максимальное
+---|:-:|:-:
+Процесс1 | 1 | 4
+Процесс2 | 4 | 6
+Процесс3 | 5 | 8
+Резерв   | 2 |
+
+Ненадёжное
+
+   | Текущее | Максимальное
+---|:-:|:-:
+Процесс1 | 8 | 10
+Процесс2 | 2 | 5
+Процесс3 | 1 | 3
+Резерв   | 1 |
+
+---
+# Алгоритм банкира
+
+Дейкстра, 1965:
+* Удовлетворять запросы, переводящие систему из надёжного состояния в надёжное.
+* Приостанавливать запросы, переводящие систему в ненадёжное состояние.
+
+---
+# Обнаружение и восстановление
+
+.right.max300px[![](detection_graph.png)]
+
+Альтернативой может быть .def[обнаружение взаимоблокировки]: поддерживать или строить специальный граф процессов и ресурсов. При невозможности выполнить запрос, необходимо проверить граф на циклы.
+
+
+
+.def[Восстановление] - одно из:
+* Завершение процесса
+* Приостановление/возобновление процесса
+* Восстановление контрольной точки
+
+
+    </textarea>
+    <script src="slides.js" type="text/javascript"></script>
+  </body>
+</html>

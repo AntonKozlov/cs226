@@ -22,3 +22,21 @@
 	vertical-align: sub;
 }
 
+.left {
+	float: left;
+	margin-right: 2em;
+}
+
+.right {
+	float: right;
+	margin-left: 2em;
+}
+
+table {
+    border-collapse: collapse;
+}
+
+table, th, td {
+    border: 1px solid black;
+    padding: 5px;
+}
