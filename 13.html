@@ -94,19 +94,24 @@ release m
 acquire m
 sl = try_acquire left
 sr = try_acquire right
+while not (sl and sr):
+        if sr: release right
+        if sl: release left
+        atomic:
+                release m
+                wait
+                acquire m
+        sl = try_acquire left
+        sr = try_acquire right
 release m
-if not (sl and sr):
-        if sr:
-                release right
-        if sl:
-                release left
-        wait
-else:
-        // state 2
-        release right
-        release left
-        wake process_left
-        wake process_right
+
+// state 2
+acquire m
+release right
+release left
+wake process_left
+wake process_right
+release m
 ```
 ---
 # Задача читателя/писателя
