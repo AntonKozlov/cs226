@@ -19,28 +19,19 @@ const symap = [
 ];
 
 function symbclass(s) {
-	return symap.reduce(function(best, rule) {
-		return rule[0].includes(s) ? rule[1] : best;
-	}, "N");
+	return symap.reduce((best, rule) => rule[0].includes(s) ? rule[1] : best, "N");
 }
 
 function findmap(str) {
-	return smap.reduce(function(best, rule) {
-		const pat = rule[0];
-		const rep = rule[1];
+	return smap.reduce((best, rule) => {
 		const bestscore = best[1];
-		const matches = pat.split("").map(function(c, i) {
-			return Math.max(
-				c == "A" ? 1 : 0,
-				c == symbclass(str[i]) ? 2 : 0,
-				c == str[i] && i == 2 ? 20 : 0);
-		});
+		const matches = rule[0].split("").map((c, i) => Math.max(
+			c == "A" ? 1 : 0,
+			c == symbclass(str[i]) ? 2 : 0,
+			c == str[i] && i == 2 ? 20 : 0));
 
-		const newscore = matches.reduce(function(a, b) {
-			return a + b;
-		});
-
-		return newscore > bestscore ? [rep, newscore] : best;
+		const newscore = matches.reduce((a, b) => a + b);
+		return newscore > best[1] ? [rule[1], newscore] : best;
 	}, [str[2], 20])[0];
 };
 
