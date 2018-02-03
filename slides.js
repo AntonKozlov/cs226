@@ -43,45 +43,62 @@ function findmap(rawstr) {
 }
 
 function asciidrawing(text) {
-	let drawing = false;
-
 	let a = text.split("\n");
+	let drawing = false;
+	let curdraw = [];
 
-	a = a.map(function(cur, i, a) {
-		let p = a[i-1] || "";
-		let n = a[i+1] || "";
-
-		if (p == "```asciidrawing") {
+	a = a.map((cur, i, a) => {
+		if (!drawing && cur == "```asciidrawing") {
 			drawing = true;
-			p = "";
+			return undefined;
 		}
 
-		const lastdraw = drawing && n == "```";
-		if (lastdraw) {
-			n = "";
+		if (!drawing)
+			return cur;
+
+		if (cur != "```") {
+			curdraw.push(cur);
+			return undefined;
 		}
 
-		if (drawing) {
-			cur = cur.replace(/[-\+v^<>|]/g, function(c, i, s) {
+		drawing = false;
+		curdraw = curdraw.map(function(cur, i, a) {
+			let p = a[i-1] || "";
+			let n = a[i+1] || "";
+			return cur.replace(/[-\+v^<>|]/g, (c, i, s) => {
 				const h = s[i-1] || "X";
 				const j = n[i]   || "X";
 				const k = p[i]   || "X";
 				const l = s[i+1] || "X";
-				return findmap(h + j + c + k + l);
+				return findmap(h + j + c + k + l)
 			});
+		});
+
+		if (curdraw[0] == "CUT") {
+			curdraw.splice(0, 1);
+			hcut = curdraw.reduce((cut, line, i) => 
+				line[0] == 'X' ? cut.concat(i) : cut, 
+			[]);
+			vcut = curdraw[0].split("").reduce((cut, c, i) =>
+				c == 'X' ? cut.concat(i) : cut, 
+			[]);
+
+			curdraw = curdraw.filter((x, i) => 
+				hcut.indexOf(i) < 0
+			);
+			curdraw = curdraw.map((x) => 
+				x.split("").filter((c, i) => 
+					vcut.indexOf(i) < 0)
+				.join(""));
 		}
 
-		if (lastdraw) {
-			drawing = false;
-		}
-
-		return cur;
+		curdraw = [ "```" ].concat(curdraw).concat([ "```" ]);
+		const ret = curdraw.join("\n");
+		curdraw = [];
+		return ret;
 	});
 
-	a = a.map(function(cur) {
-		return cur == "```asciidrawing" ? "```" : cur;
-	});
-
+	a = a.filter((x) => x !== undefined);
 	return a.join("\n");
 }
 
