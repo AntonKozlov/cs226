@@ -45,16 +45,19 @@ function findmap(rawstr) {
 function asciidrawing(text) {
 	let a = text.split("\n");
 	let drawing = false;
+	let makecut = false;
 	let curdraw = [];
 
 	a = a.map((cur, i, a) => {
-		if (!drawing && cur == "```asciidrawing") {
-			drawing = true;
-			return undefined;
-		}
-
-		if (!drawing)
+		if (!drawing) {
+			if (cur.startsWith("```asciidrawing")) {
+				drawing = true;
+				const s = cur.split(" ");
+				makecut = s[1] == "cut";
+				return undefined;
+			}
 			return cur;
+		}
 
 		if (cur != "```") {
 			curdraw.push(cur);
@@ -74,8 +77,7 @@ function asciidrawing(text) {
 			});
 		});
 
-		if (curdraw[0] == "CUT") {
-			curdraw.splice(0, 1);
+		if (makecut) {
 			hcut = curdraw.reduce((cut, line, i) => 
 				line[0] == 'X' ? cut.concat(i) : cut, 
 			[]);
