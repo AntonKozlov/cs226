@@ -1,39 +1,46 @@
 
 const smap = [
-	[ "AA-AA", "\u2500"],
-	[ "AA|AA", "\u2502"],
+	[ "..-..", "─"],
+	[ "..|..", "│"],
 
-	[ "SS+AA", "\u2510"],
-	[ "AS+AS", "\u250c"],
-	[ "AS+SS", "\u251c"],
-	[ "SS+SA", "\u2524"],
-	[ "SA+SA", "\u2518"],
-	[ "AA+SS", "\u2514"],
-	[ "SS+AS", "\u252c"],
-	[ "SA+SS", "\u2534"],
-	[ "SS+SS", "\u253c"],
+	[ "-|+..", "┐"],
+	[ ".|+.-", "┌"],
+	[ ".|+|-", "├"],
+	[ "-|+|.", "┤"],
+	[ "-.+|.", "┘"],
+	[ "..+|-", "└"],
+	[ "-|+.-", "┬"],
+	[ "-.+|-", "┴"],
+	[ "-|+|-", "┼"],
+
+	[ "..<.-", "\u25C0"],
+	[ "-.>..", "\u25B6"],
+	[ ".|^..", "\u25B2"],
+	[ "..v|.", "\u25Bc"],
 ];
 
-const symap = [
-	[ "|-+", "S" ],
+const simmap = [
+	[ "+", "-|+|-" ],
+	[ "v", ".|v.." ],
+	[ "^", "..^|." ],
+	[ "<", "-.<.." ],
+	[ ">", "..>.-" ],
 ];
 
-function symbclass(s) {
-	return symap.reduce((best, rule) => rule[0].includes(s) ? rule[1] : best, "N");
-}
-
-function findmap(str) {
+function findmap(rawstr) {
+	const str = rawstr.split("").map((c, i) => {
+		const m = simmap.find((x) => x[0][0] == c);
+		return m ? m[1][i] : c;
+	}).join('');
 	return smap.reduce((best, rule) => {
-		const bestscore = best[1];
-		const matches = rule[0].split("").map((c, i) => Math.max(
-			c == "A" ? 1 : 0,
-			c == symbclass(str[i]) ? 2 : 0,
-			c == str[i] && i == 2 ? 20 : 0));
-
-		const newscore = matches.reduce((a, b) => a + b);
-		return newscore > best[1] ? [rule[1], newscore] : best;
-	}, [str[2], 20])[0];
-};
+		const score = rule[0].split("").map((c, i) => 
+			Math.max(
+				2 * (c == str[i]),
+				1 * (c == '.')))
+		.reduce((a, b) => a * b);
+		return score <= best[1] ? best : [rule[1], score];
+	}, [str[2], 1])[0];
+}
 
 function asciidrawing(text) {
 	let drawing = false;
@@ -55,7 +62,7 @@ function asciidrawing(text) {
 		}
 
 		if (drawing) {
-			cur = cur.replace(/[-\+|]/g, function(c, i, s) {
+			cur = cur.replace(/[-\+v^<>|]/g, function(c, i, s) {
 				const h = s[i-1] || "X";
 				const j = n[i]   || "X";
 				const k = p[i]   || "X";
