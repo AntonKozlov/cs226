@@ -14,9 +14,7 @@ class: center, middle
 # Операционные системы
 
 ---
-Антон Козлов
-
-drakon.mega@gmail.com
+Антон Козлов (<drakon.mega@gmail.com>)
 
 https://github.com/embox/embox
 
@@ -29,101 +27,112 @@ https://github.com/embox/embox
 2. Практическая работа с другой
  1. ~~Э. Таненбаум, А. Вудхалл "Операционные системы. Разработка и реализация"~~
  2. https://github.com/embox/embox
+ 3. https://github.com/AntonKozlov/os226-2018
+
 
 ---
+# Операционная система
 
-# Понятие ОС
+Зачем изучать?
 
+---
+# Операционная система
 
 ```asciidrawing
-+--------------+
-| Applications |
-+--------------+
-|  Libs/Utils  | \
-+--------------+  > OS
-|    Kernel    | /
-+--------------+
-|   Hardware   |
-+--------------+
++------------------+
+|   Applications   |
++------------------+
+| Lib/Util/Service | \
++------------------+  OS
+|      Kernel      | /
++------------------+
+|     Hardware     |
++------------------+
 ```
-
-1. Расширенная вычислительная машина
-2. Менеджер ресурсов
-
----
-# Расширенная машина
-
-* Дополнительные инструкции
-* Абстракция от оборудования
+.def[Операционная система] -- это
+1. .def[расширенная вычислительная машина]:
+ * Дополнительные инструкции
+ * Абстракция от оборудования
+2. .def[менеджер ресурсов]:
+ * временных
+ * пространственных
 
 ---
 
-# Менеджер ресурсов
-
-* Распределение ресурсов
- * во времени
- * в пространстве
-
----
-
-# История развития операционных систем
+# История .def[по Таненбауму]
 
 Первое поколение (1945-1955):
 * Электронные лампы
 * ОС отсутствуют
 * Программирование: машинный язык на коммутационной панели/электрические схемы
 
----
-
-# История развития операционных систем
-
 Второе поколение (1955-1965):
 * транзисторы
 * перфокарты
 * системы пакетной обработки (IBM FSM)
 
----
-
-# История развития операционных систем
-
 Третье поколение (1965-1980):
 * интегральные схемы
-* ОS/360
-* программно-совместимые машины
+* программно-совместимые машины: ОS/360
 * пакетная обработка + многозадачность: во время ожиданий операций ввода/вывода запускалась другая задача
-
----
-
-# История развития операционных систем
-
-Третье поколение (1965-1980):
 * spooling: по мере завершения задач происходит подгрузка новых
+* разделение времени: CTSS, MULTICS, UNIX
 
 ---
 
-# История развития операционных систем
-
-3.5 поколение (1965-1980):
-* CTSS, MULTICS, UNIX
-* разделение времени
-
----
-
-# История развития операционных систем
+# История .def[по Таненбауму]
 
 4 поколение (1980-):
-* DOS, Windows, Linux, ….
-* многозадачность
+* DOS, Mac OS, Windows, Linux, ….
 * интерфейс пользователя
-* специфичность для областей (ОС для серверов/настольных компьютеров/…)
+* сетевые, распределённые ОС (Plan9)
+* мобильные ОС (Android, iOS)
+
+Специализация ОС (для серверов/настольных компьютеров/…):
+ * Что предоставляют?
+ * Какие ограничения накладывают?
+
+---
+# История .def[по Хансену]
+
+.it[P. Brinch Hansen, The evolution of operating systems]
+
+The author looks back on the first half century of operating systems and selects his favorite papers on classic operating systems.
+
+These papers span the entire history of the field from the batch processing systems of the 1950s to the distributed systems of the 1990s.
+
+Each paper describes an operating system that combines significant ideas in an elegant way.
+
+Most of them were written by the pioneers who had the visions and the drive to make them work.
+
+The author summarizes each paper and concludes that operating systems are based on a surprisingly small number of ideas of permanent interest.
 
 ---
 
-# Типы ОС
-
-По назначению:
-* Что предоставляют?
-* Какие ограничения накладывают?
+0. Open Shop
+ * The idea of operating systems
+0. Batch Processing
+ * Tape batching
+ * First-in, first-out scheduling
+0. Multiprogramming
+ * Processor multiplexing
+ * Indivisible operations
+ * Demand paging
+ * Input/output spooling
+ * Priority scheduling
+ * Remote job entry
+0. Timesharing
+ * Simultaneous user interaction
+ * On-line file systems
+0. Concurrent Programming
+ * Hierarchical systems
+ * Extensible kernels
+ * Parallel programming concepts
+ * Secure parallel languages
+0. Personal Computing
+ * Graphic user interfaces
+0. Distributed Systems
+ * Remote servers
 
     </textarea>
     <script src="slides.js" type="text/javascript"></script>

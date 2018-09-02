@@ -9,6 +9,10 @@
 /*}*/
 /*[>.remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }<]*/
 
+.it {
+	font-style: italic;
+}
+
 .def {
 	font-style: italic;
 }
