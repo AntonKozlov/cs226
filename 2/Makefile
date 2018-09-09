@@ -7,6 +7,7 @@
 P := hello syscall exocall 
 
 CFLAGS = -g
+LDFLAGS = -static
 all : $P
 
 clean :
