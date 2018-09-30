@@ -141,6 +141,24 @@ class: center, middle
 
 Проблемы масштабирования: с ростом количества блоков время поиска растёт
 
+???
+
+# Optimal fit
+Campbell introduced an optimal fit policy which is a variant of next fit intended to improve the
+chances of a good fit without too much cost in extra searching. It is not optimal in any useful
+sense.
+
+The basic idea is that the allocator looks forward through the linear list for a bounded number of
+links recording the best t found It then proceeds forward looking for another fit at least as good as
+what it found in that sample  range If it fails to find one before traversing the whole list it uses the best
+fit it found in the sample range. That is it degenerates into exhaustive best fit search when the sample
+contains the best fit.
+
+## J. A. Campbell, A note on an optimal-fit method for dynamic allocation of storage
+### Abstract
+The problem of maintaining a free-storage list of variable-size blocks when requests for storage are also of various sizes is considered. A strategy is proposed which is directly related to the solution of the optimal stopping problem on a Markov chain of given length. Results of tests which show a superiority of this strategy over the conventional first-fit method under some conditions are presented.
+
+
 ---
 # Слияние
 
