@@ -26,6 +26,12 @@
 	vertical-align: sub;
 }
 
+.sup {
+	font-size: .83em;
+	vertical-align: super;
+}
+
+
 .left {
 	float: left;
 	margin-right: 2em;
