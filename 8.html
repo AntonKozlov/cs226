@@ -161,6 +161,7 @@ unlock(self) {
 #### lock 2
 
 ```
+process victim = NULL
 lock(self) {
 	victim = self
 	while (victim == self) {}
@@ -213,24 +214,19 @@ unlock(self) {
 
 ---
 
-Deadlock при инверсии приоритетов разрешается с помощью mutex'a
-
-Но проблема инверсии приоритетов не разрешается полностью
-
----
-
 ```
 down(semaphore *s) {
 	sched_lock();
 	while (true) {
 		If (cnt > 0) {
 			--cnt;
-			return;
+                        goto out;
 		} else {
 			s->q->add(self);
 			sched_unlock_wait_relock();
 		}
 	}
+out:
 	sched_unlock()
 }
 
@@ -249,7 +245,29 @@ up(semaphore *s) {
 }
 
 ```
-Атомарность - с помощью низкоуровневых механизмов создания критических секций
+`sched_lock()/unlock()` -- низкоуровневые механизмы создания критических секций, обеспечивают атомарность операций (отосительно друг друга).
+
+---
+# Инверсия приоритета
+
+```
+LOW {                  HIGH {
+        down(m)
+                                down(m)
+```
+---
+# Инверсия приоритета
+
+```
+LOW {                  HIGH {
+        down(m)
+        <HIGH>                  down(m)
+        up(m)
+        <LOW>
+                                ...
+```
+
+.def[Наследование приоритета] - процесс получает максимальный приоритет среди других процессов, ожидающих занятый ресурс.
 
 ---
 # Монитор
@@ -291,6 +309,9 @@ int pthread_barrier_init(pthread_barrier_t *restrict barrier,
 
 int pthread_barrier_wait(pthread_barrier_t *barrier);
 ```
+
+Имплементация.
+
     </textarea>
     <script src="slides.js" type="text/javascript"></script>
   </body>
