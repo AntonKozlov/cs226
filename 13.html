@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!--<title>My Awesome Presentation</title>-->
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <link rel="stylesheet" type="text/css" href="slides.css">
+    <script src="remark.min.js"></script>
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+# Операционные системы
+
+#### Кеши и мультипроцессирование
+---
+# Литература
+
+* U. Drepper. What Every Programmer Should Know About Memory
+* P. McKenney. Memory Barriers: a Hardware View for Software Hackers
+
+---
+# Кеш
+
+.left[
+```asciidrawing cut
+X
+ +-----------+
+ |    Ядро   |
+ +-----+-----+
+ | L1i | L1d |
+ +-----+-----+
+ |    L2     |
+ +-----------+ +-------+
+ |    L3     | |  Mem  |
+ +-----------+ +-------+
+X
+ +---------------------+
+ +---------------------+
+```
+]
+
+Операции с памятью (DRAM) имеют существенные задержки.
+Проистекают из её физического устройства.
+
+Произвести операцию с одним словом в памяти почти так же дорого, как и с несколькими.
+
+Кеш памяти используется для
+* сохранения ранее полученых результатов
+* группировки и предвыборки
+
+Предполагается локальность доступа к данным и инструкциям.
+
+В многоядерной машине часть уровней кеша общие для всех ядер, часть - индивидуальные для каждого ядра.
+
+---
+# Полноассоциативный кеш
+
+```asciidrawing
+       +-----------------------------+--------------+
+Адрес: |             tag             |    offset    |
+       +-------------+---------------+--------------+
+              +------+------+
+              |      |      |
+ Tag          |      |      |                        Data
++-----+     +-v-+    |      |                       +-----+
+|     +---->| C +----+------+------+----------------+     |
++-----+     +---+  +-v-+    |      |                +-----+
+|     +----------->| C +----+------+----------------+     |
++-----+            +---+  +-v-+    |                +-----+
+|     +------------------>| C +----+----------------+     |
++-----+                   +---+    |                +-----+
+                                   v
+```
+---
+# С прямым отображением
+
+```asciidrawing
+       +--------------+--------------+--------------+
+Адрес: |     tag      |     set      |    offset    |
+       +------+-------+------+-------+--------------+
+              +---+          |
+            +-----+----------+----------------+
+ Tag        v     |                           v      Data
++-----+   +---+   +---+                     +---+   +-----+
+|     +-->| M |       v                     | M |<--+     |
++-----+   |   |     +---+                   |   |   +-----+
+|     +-->| U +---->| C +---------+---------+ U |<--+     |
++-----+   |   |     +---+         |         |   |   +-----+
+|     +-->| X |                   |         | X |<--+     |
++-----+   +---+                   |         +---+   +-----+
+                                  v
+```
+---
+# Устройство
+
+```asciidrawing
+       +--------------+--------------+--------------+
+Адрес: |     tag      |     set      |    offset    |
+       +--------------+--------------+--------------+
+```
+
+* 2.sup[l(offset)] - длина линейки (line)
+* 2.sup[l(set)] - количество наборов
+* ассоциативность - количество различных tag'ов в одном наборе
+
+Примеры:
+* полноассоциативный: l(set) == 0
+* с прямым отображением: 1-ассоциативный кеш
+
+---
+# Запись
+
+Как поддерживать консистентность кеша и памяти при записи?
+
+* write-through: запись ведётся одновременно в кеш и в память
+  * легко вытеснять
+  * большой траффик на шине
+* write-back: запись при вытеснении
+  * ... или простое шины
+  * лучшая производительность
+  * как быть с несколькими ядрами/процессорами?
+
+---
+# Кеши и мультипроцессоры
+
+```
+void foo(void) {
+        a = 1;
+        b = 1;
+}
+
+void bar(void) {
+        while (b == 0) continue;
+        assert(a == 1);
+}
+```
+CPU 0 исполняет `foo`, 1 -- `bar`.
+
+Начальные значения: `a = 0`, `b = 0`
+
+---
+# Кеши и мультипроцессоры
+
+```
+void foo(void) {
+        a = 1;
+        __asm__ __volatile__ (:::"memory");
+        b = 1;
+}
+
+void bar(void) {
+        while (b == 0) continue;
+        assert(a == 1);
+}
+```
+
+---
+# Согласование кешей
+
+.def[Протокол согласования кешей] - средство синхронизации между кешами для достижения консистентного представления о содержимом памяти.
+
+MESI:
+* Modified
+* Exclusive
+* Shared
+* Invalid
+
+Сообщения:
+* Read
+* Read Response
+* Invalidate
+* Invalidate Ack
+* Read Invalidate
+* Writeback
+
+---
+# Буфер записи
+
+.left[
+```asciidrawing
+     CPU 0           CPU 1
+       |               |
+       |               |
+       |  invalidate   |
+       +------+        |
+     s |      |        |
+     t |      +------->|
+     a |               |
+     l |      +--------+
+     l |      |        |
+       |<-----+        |
+       |  ack          |
+       |               |
+       v               v
+```
+]
+
+CPU 0 производит запись, при этом линейка адреса находится у CPU 1
+
+CPU 0 приходится ожидать, пока CPU 1 инвалидирует линейку и пришлет ответ.
+
+Оптимизация: не ждать после invalidate, поместить запись в буфер. Когда ack придет, применить запись к кешу.
+
+Чтение должно опрашивать не только кеш, но и буфер записи.
+
+---
+# Проблема
+
+.left[
+```
+void foo(void) {
+        a = 1;
+        b = 1;
+}
+
+void bar(void) {
+        while (b == 0);
+        assert(a == 1);
+}
+```
+]
+
+```
+foo, b - CPU0, bar, a - CPU1
+
+0: a -> store buffer, read invalidate a >
+                1: read b >
+0: store b
+0: read resp b==1 >
+                1: read resp b==1 <
+                1: while, assert
+                1: read invalidata a <
+```
+---
+# membarrier
+
+.left[
+```
+void foo(void) {
+        a = 1;
+        smp_mb();
+        b = 1;
+}
+
+void bar(void) {
+        while (b == 0);
+        assert(a == 1);
+}
+```
+]
+
+```
+foo, b - CPU0, bar, a - CPU1
+
+0: a -> store buffer, read invalidate a >
+                1: read b >
+0: b -> store buffer
+0: read resp b==0 >
+                1: read resp b==0 <
+                ...
+```
+---
+# Буфер инвалидации
+
+Записи из store buffer применяются по invalidation ack.
+
+Если кэш загружен, например, invalidation сообщениями, то ack будет выслан не сразу.
+
+Поэтому, invalidation ack высылается сразу, а invalidation запоминается в буфер.
+
+.left[
+```
+void foo(void) {
+        a = 1;
+        smp_mb();
+        b = 1;
+}
+
+void bar(void) {
+        while (b == 0);
+        assert(a == 1);
+}
+```
+]
+
+```
+b - M(cpu0), a - S
+0: a -> store buf, inv a>
+        1: read b >
+0: store b, read b <, read resp b >
+        1: inv a <, a -> inv q, inv ack a >
+        1: read resp b <, read a
+        1: inv a apply
+```
+---
+# read membarrier
+
+.left[
+```
+void foo(void) {
+        a = 1;
+        smp_wmb(); // было smp_mb
+        b = 1;
+}
+
+void bar(void) {
+        while (b == 0);
+        smp_rmb();
+        assert(a == 1);
+}
+```
+]
+
+Применять весь invalidation buffer перед чтением семантически связанных областей.
+
+При исполнении rmb, все элементы буфера инвалидации помечаются.
+
+Все последующие чтения задерживаются, пока все помеченные элементы буфера не будут применены к кешу.
+
+---
+# Переупорядочивания
+
+.fitimg[![](ordering.png)]
+
+---
+# Read-Copy-Update
+
+RCU - примитив синхронизации Linux для SMP систем. Предназначен для преобладающего чтения.
+
+Концептуально, обновление:
+1. Удаление (removal) ссылок на данные. Читатели видят либо старые, либо новые данные.
+2. Ожидание, пока все читатели не выйдут из критических секций RCU чтения.
+3. Утилизация (reclamation) старого ресура.
+
+API:
+
+`rcu_read_lock`/`unlock` - критическая секция (к записи).
+Здесь запрещено блокирование.
+Могут быть вложенными или пересекаться.
+
+`rcu_dereference` - получить указатель из RCU-защищённого указателя
+
+`synchronize_rcu` - блокироваться, пока все предшествующие читатели в критической секции (не все читатели вообще).
+
+`rcu_assign_pointer` - присвоить новое значение указателю, защищенному RCU
+
+---
+# Пример
+```
+DEFINE_SPINLOCK(foo_mutex);
+struct foo *gbl_foo;
+int foo_get_a(void) {
+        int retval;
+        rcu_read_lock();
+        retval = rcu_dereference(gbl_foo)->a;
+        rcu_read_unlock();
+        return retval;
+}
+
+void foo_update_a(int new_a) {
+        struct foo *new_fp, *old_fp;
+        new_fp = kmalloc(sizeof(*new_fp), GFP_KERNEL);
+        spin_lock(&foo_mutex);
+        old_fp = gbl_foo;
+        *new_fp = *old_fp;
+        new_fp->a = new_a;
+        rcu_assign_pointer(gbl_foo, new_fp);
+        spin_unlock(&foo_mutex);
+        synchronize_rcu();
+        kfree(old_fp);
+}
+```
+
+---
+# Реализация
+
+```
+#define rcu_assign_pointer(p, v) ({ \
+        smp_wmb(); \
+        (p) = (v); \
+})
+
+#define rcu_dereference(p) ({ \
+        typeof(p) _________p1 = p; \
+        smp_read_barrier_depends(); \
+        (_________p1); \
+})
+```
+
+Простая реализация 1:
+```
+static DEFINE_RWLOCK(rcu_gp_mutex);
+void rcu_read_lock(void) {
+        read_lock(&rcu_gp_mutex);
+}
+void rcu_read_unlock(void) {
+        read_unlock(&rcu_gp_mutex);
+}
+void synchronize_rcu(void) {
+        write_lock(&rcu_gp_mutex);
+        write_unlock(&rcu_gp_mutex);
+}
+```
+
+---
+# Реализация
+
+Простая реализация 2:
+```
+void rcu_read_lock(void) { }
+void rcu_read_unlock(void) { }
+void synchronize_rcu(void) {
+        int cpu;
+        for_each_possible_cpu(cpu)
+                run_on(cpu);
+}
+
+```
+---
+# Аллокаторы и кеши
+
+Размещение памяти под объекты влият на загрузку шины между процессором и памятью.
+
+SLAB:
+
+```asciidrawing
+0x0     0x20    0x40
++-------+-------+-------+
+| obj 1 | obj 2 | obj 3 | (cache-block 0)
++-------+-------+-------+
+
+0x0     0x20    0x40
++-------+-------+-------+
+| obj 4 | obj 5 | obj 6 | (cache-block 1)
++-------+-------+-------+
+```
+
+Решение - раскраска кэша.
+
+```asciidrawing
+
+  0x4     0x24    0x44
++-+-------+-------+-------+
+|.| obj 4 | obj 5 | obj 6 | (cache-block 1)
++-+-------+-------+-------+
+```
+
+    </textarea>
+    <script src="slides.js" type="text/javascript"></script>
+  </body>
+</html>
+
