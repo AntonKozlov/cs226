@@ -9,6 +9,18 @@
 /*}*/
 /*[>.remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }<]*/
 
+.remark-slide .title h2 {
+	font-size: 30px;
+}
+
+.remark-slide h2 {
+	font-size: 20px;
+}
+
+.fsmall {
+	font-size: 75%;
+}
+
 .it {
 	font-style: italic;
 }

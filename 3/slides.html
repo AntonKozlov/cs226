@@ -9,11 +9,11 @@
   <body>
     <textarea id="source">
 
-class: center, middle
+class: title, center, middle
 
 # Операционные системы
 
-#### Управление памятью
+## Управление памятью
 
 ---
 # Литература
@@ -229,7 +229,7 @@ tag: бит занят/свободен
 size + tag можно хранить в одном слове.
 
 ---
-### Двоичные близнецы
+# Двоичные близнецы
 
 Вариант Linux'а:
 
@@ -285,7 +285,7 @@ buddy_block_addr(block_addr, size) = block_addr ^ (1 << size)
 
 Пример: Best Fit по двоичному дереву, упорядоченному по размеру.
 
-#### Поиск по битовой шкале
+## Поиск по битовой шкале
 
 Одна или несколько битовых шкал, хранящих пометки занят/свободен.
 
@@ -360,7 +360,7 @@ slab:
 ---
 # slab - операции
 
-##### To allocate an object:
+## To allocate an object:
 ```
 if (there’s an object in the cache) {
 	take it (no construction);
@@ -370,11 +370,11 @@ if (there’s an object in the cache) {
 }
 ```
 
-##### To free an object
+## To free an object
 
 `return it to the cache (no destruction required);`
 
-##### To reclaim memory from the cache:
+## To reclaim memory from the cache:
 ```
 take some objects from the cache;
 destroy the objects;
