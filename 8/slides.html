@@ -251,23 +251,34 @@ up(semaphore *s) {
 # Инверсия приоритета
 
 ```
-LOW {                  HIGH {
-        down(m)
-                                down(m)
+LOW:                    HIGH:                   MED:
+//work                  //sleep                 //sleep
+down(m)
+//work
+//ready                 //wake
+                        //work
+//work                  down(m) //block
+//ready                                         //wake,work
 ```
 ---
 # Инверсия приоритета
 
 ```
-LOW {                  HIGH {
-        down(m)
-        <HIGH>                  down(m)
-        up(m)
-        <LOW>
-                                ...
+LOW:                    HIGH:                   MED:
+//work                  //sleep                 //sleep
+down(m)
+//work
+//ready                 //wake
+                        //work
+//work,HIGH             down(m) //block
+                                                //wake
+//up(m),LOW,ready
+                        //work
 ```
 
 .def[Наследование приоритета] - процесс получает максимальный приоритет среди других процессов, ожидающих занятый ресурс.
+
+Sha, Rajkumar, Lehoczky: "Priority Inheritance Protocols: An Approach to Real-Time Synchronization"
 
 ---
 # Монитор
