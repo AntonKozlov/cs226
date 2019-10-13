@@ -52,7 +52,7 @@ process1                 process2
 * deadlock-freedom - если 2 процесса хотят завладеть ресурсом, то по крайней мере 1 преуспеет
 * starvation-freedom - если процесс хочет завладеть ресурсом, то когда-нибудь он преуспеет
 
-```
+```c
 	lock();
 	write_pipe();
 	unlock();
@@ -65,7 +65,7 @@ process1                 process2
 ---
 # Выключение прерываний
 
-```
+```c
 lock() {
 	irq_disable();
 }
@@ -77,15 +77,11 @@ unlock() {
 
 --
 
-НО:
-1. для коротких секций в ядре
-2. нельзя давать пользователю
+* для коротких секций в ядре
+* нельзя давать пользователю
 
---
 
- ---
-
-```
+```c
 lock() {
 	sched_disable();
 }
@@ -99,7 +95,7 @@ unlock() {
 ---
 # Блокирующая переменная
 
-```
+```c
 bool locked = false;
 lock() {
 	while (locked);
@@ -111,14 +107,10 @@ unlock() {
 }
 ```
 
---
-НО:
-...
-
 ---
 # Блокирующая переменная
 
-```
+```c
 atomic test_and_set(ptr) {
 	bool old = *ptr
 	if (!*ptr) {
@@ -128,7 +120,7 @@ atomic test_and_set(ptr) {
 }
 ```
 
-```
+```c
 bool locked = 0;
 lock() {
 	while (test_and_set(&locked));
@@ -144,8 +136,7 @@ unlock() {
 
 ## lock 1
 
-Только 2 процесса
-```
+```c
 lock(self) { // 0 or 1
 	other = 1 - self
 	flag[self] = true
@@ -160,7 +151,7 @@ unlock(self) {
 
 ## lock 2
 
-```
+```c
 process victim = NULL
 lock(self) {
 	victim = self
@@ -174,7 +165,7 @@ unlock(self) {
 ---
 # Алгоритм Петерсона
 
-```
+```c
 lock(self) {
 	other = 1 - self
 	flag[self] = true
@@ -187,7 +178,7 @@ unlock(self) {
 }
 ```
 
-НО (для блокирующей переменной):
+Для блокирующей переменной:
 1. ожидание активно
 2. проблема инверсии приоритета:
    * низкоприоритетный процесс исполненяется в критической секции
@@ -214,34 +205,34 @@ unlock(self) {
 
 ---
 
-```
+```c
 down(semaphore *s) {
-	sched_lock();
-	while (true) {
-		If (cnt > 0) {
-			--cnt;
-                        goto out;
-		} else {
-			s->q->add(self);
-			sched_unlock_wait_relock();
-		}
-	}
+    sched_lock();
+    while (true) {
+        if (0 < cnt) {
+            --cnt;
+            goto out;
+        } else {
+            s->q->add(self);
+            sched_unlock_wait_relock();
+        }
+    }
 out:
-	sched_unlock()
+    sched_unlock()
 }
 
 
 ```
 
-```
+```c
 up(semaphore *s) {
-	sched_lock();
-	++cnt;
-	other = s->q->pop();
-	If (other) {
-		wake(other);
-	}
-	sched_unlock();
+    sched_lock();
+    ++cnt;
+    other = s->q->pop();
+    if (other) {
+        wake(other);
+    }
+    sched_unlock();
 }
 
 ```
@@ -283,7 +274,7 @@ Sha, Rajkumar, Lehoczky: "Priority Inheritance Protocols: An Approach to Real-Ti
 ---
 # Монитор
 
-```
+```c
 	down(&sem)
 	write_pipe();
 	up(&sem);
@@ -300,28 +291,38 @@ Sha, Rajkumar, Lehoczky: "Priority Inheritance Protocols: An Approach to Real-Ti
 
 ```
 class Pipe {
-	public synchronized void write_pipe() {
-		...
-	}
-	public synchronized void read_pipe() {
-		...
-	}
+	public synchronized void write() { ...  }
+	public synchronized void read() { ...  }
 }
 ```
 
 ---
 # Барьер
 
-.def[Барьер] - примитив для синхронизации фаз исполнения
+.def[Барьер] - примитив для синхронизации фаз исполнения.
 
+```c
+struct barrier {
+    struct mutext m;
+    int limit, now;
+}
+void init(struct barrier *b, int limit) {
+    down(&b->m);
+    b->limit = limit;
+    b->now = 0;
+    up(&b->m);
+}
+void wait(struct barrier *b) {
+    down(&b->m);
+    if (b->now + 1 < b->limit) {
+        ++b->now;
+        wait(&b->m);
+    } else {
+        notify(&b->m);
+    }
+}
 ```
-int pthread_barrier_init(pthread_barrier_t *restrict barrier,
-       const pthread_barrierattr_t *restrict attr, unsigned count);
-
-int pthread_barrier_wait(pthread_barrier_t *barrier);
-```
-
-Имплементация.
+Например: [glibc](https://sourceware.org/git/gitweb.cgi?p=glibc.git;a=blob;f=nptl/pthread_barrier_wait.c;h=54bc727e39538ac711c4db6c9901b1ec05222a82;hb=HEAD#l25)
 
     </textarea>
     <script src="../slides.js" type="text/javascript"></script>
