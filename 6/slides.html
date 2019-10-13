@@ -191,6 +191,20 @@ C.sub[i] = T.sub[i] - T.sub[i-1]
 	2. провести оставшиеся действия
 	3. переключиться в изначальный прерванный контекст
 
+
+```asciidrawing
+
+### IRQ mode               --- non-IRQ mode
+
+
+     CPU ------######-----------------
+               |     |       |
+              irq  bottom   exit
+               |     |       |
+      OS ------##############---------
+
+```
+
 ---
 # Обработчик таймера 2
 
@@ -201,6 +215,20 @@ C.sub[i] = T.sub[i] - T.sub[i-1]
 2. bottom half
 	1. обойти множество программных таймеров, декрементировать счётчики
 	2. вернуться из прерывания
+
+---
+# ?
+
+Как синхронизировать ожидание времени и прерывание?
+
+```
+void sched_sleep(unsigned ms) {
+        int endtime = sched_gettime() + ms;
+        int curtime;
+        while (sched_gettime() <= endtime) {
+              // pause() ? -- но можем пропутсить
+        }
+```
 
     </textarea>
     <script src="../slides.js" type="text/javascript"></script>
