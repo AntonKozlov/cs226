@@ -147,47 +147,6 @@ release m
 ```
 
 ---
-# Приоритет писателям
-
-```
-int readcount = 0, writecount = 0;
-mutex m1 = UNLOCKED, m2 = UNLOCKED, m3 = UNLOCKED, w = UNLOCKED;
-
-READER                                  WRITER
-
-acquire m3                              acquire m2
-        acquire r                       writecount += 1
-                acquire m1              if writecount == 1:
-                readcount += 1                  acquire r
-                if readcount == 1:      release m2
-                        acquire w
-                release m1
-        release r
-release m3
-
-                                        acquire w
-... reading ...                         ... writing ...
-                                        release w
-
-acquire m1                              acquire m2
-readcount -= 1                          writecount -= 1
-if readcount == 0:                      if writecount == 0:
-        release w                               release r
-release m1                              release m2
-
-```
-???
-mutex 3 is necessary because of our absolute insistence on priority
-for writers. Without mutex 3 we have the possibility
-that a writer and one or more readers will be simul-
-taneously waiting for a V(r) to be done by a reader.
-In that event we could not guarantee priority to the
-writer, mutex 3 guarantees a reader exclusive access to
-the block of code from "P(r)" to "V(r)" inclusive. As
-a result there will be at most one process ever waiting
-at r, and the result of a V is clear.
-
----
 # Честное распределение
 
 ```
@@ -213,6 +172,48 @@ if readcount == 0:
         release w
 release m
 ```
+
+
+---
+# Приоритет писателям
+
+```
+int readcount = 0, writecount = 0;
+mutex m1 = UNLOCKED, m2 = UNLOCKED, m3 = UNLOCKED, w = UNLOCKED;
+
+READER                                  WRITER
+
+acquire m3                              acquire m2
+        acquire in                      writecount += 1
+                acquire m1              if writecount == 1:
+                readcount += 1                  acquire in
+                if readcount == 1:      release m2
+                        acquire w
+                release m1
+        release in
+release m3
+
+                                        acquire w
+... reading ...                         ... writing ...
+                                        release w
+
+acquire m1                              acquire m2
+readcount -= 1                          writecount -= 1
+if readcount == 0:                      if writecount == 0:
+        release w                               release in
+release m1                              release m2
+
+```
+???
+mutex 3 is necessary because of our absolute insistence on priority
+for writers. Without mutex 3 we have the possibility
+that a writer and one or more readers will be simul-
+taneously waiting for a V(in) to be done by a reader.
+In that event we could not guarantee priority to the
+writer, mutex 3 guarantees a reader exclusive access to
+the block of code from "P(in)" to "V(in)" inclusive. As
+a result there will be at most one process ever waiting
+at in, and the result of a V is clear.
 
 ---
 # Ресурсы и взаимоблокировки
@@ -280,22 +281,19 @@ process1() {            process2() {
 
 .def[Уклонение] - при возможности взаимоблокировки, не допускать её алгоритмически, например, с помощью политик удовлетворения запросов.
 
-Пример начальных условий:
+Алгоритм банкира (Дейкстра, 1965)
+
+Условия:
  * имеется фиксированное количество ресурсов одного типа
  * фиксированное количество процессов
  * известны максимальное количество ресурсов, используемых каждым процессом
  * ресурсы освобождаются за конечное время
 
-Тогда, .def[состояние]:
- * надёжное: существует порядок планирования, позволяющий всем процессам завершиться в течение конечного времени
- * ненадёжное: в противном случае
-
-Из ненадёжного состояния в случае неблагоприятной последовательности событий можно попасть в взаимоблокировку (но не обязательно)
-
 ---
-# Примеры состояний
+# Алгоритм банкира
 
-Надёжное
+.left[
+Надёжное:
 
    | Текущее | Максимальное
 ---|:-:|:-:
@@ -304,7 +302,7 @@ process1() {            process2() {
 Процесс3 | 5 | 8
 Резерв   | 2 |
 
-Ненадёжное
+Ненадёжное:
 
    | Текущее | Максимальное
 ---|:-:|:-:
@@ -312,11 +310,15 @@ process1() {            process2() {
 Процесс2 | 2 | 5
 Процесс3 | 1 | 3
 Резерв   | 1 |
+]
 
----
-# Алгоритм банкира
+.def[Состояние]:
+ * надёжное: существует порядок планирования, позволяющий всем процессам завершиться в течение конечного времени
+ * ненадёжное: в противном случае
 
-Дейкстра, 1965:
+Из ненадёжного состояния в случае неблагоприятной последовательности событий можно попасть в взаимоблокировку (но не обязательно)
+
+Алгоритм:
 * Удовлетворять запросы, переводящие систему из надёжного состояния в надёжное.
 * Приостанавливать запросы, переводящие систему в ненадёжное состояние.
 
@@ -325,12 +327,14 @@ process1() {            process2() {
 
 .right.max300px[![](detection_graph.png)]
 
-Альтернативой может быть .def[обнаружение взаимоблокировки]: поддерживать или строить специальный граф процессов и ресурсов. При невозможности выполнить запрос, необходимо проверить граф на циклы.
+.def[Обнаружение взаимоблокировки]: поддерживать или строить специальный граф процессов и ресурсов. При невозможности выполнить запрос, необходимо проверить граф на циклы.
 
-.def[Восстановление] - одно из:
-* Завершение процесса
-* Приостановление/возобновление процесса
-* Восстановление контрольной точки
+Быстро и неточно: проверять одно из условий возникновения взаимоблокировки.
+
+.def[Восстановление]:
+* завершение процесса
+* приостановление/возобновление процесса
+* восстановление контрольной точки
 
 
     </textarea>
