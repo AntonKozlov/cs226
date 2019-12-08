@@ -380,7 +380,37 @@ can no longer be verified with Alice’s public key.
 
 5. The signature cannot be repudiated. Bob doesn’t need Alice’s help to verify her signature.
 
+---
+# Генерация случайных чисел
 
+* .def[PRNG]: PseudoRandom Number Generator
+* .def[RNG]: Random Number Generator
+* .def[CRNG]: Cryptographically secure (pseudo)Random Number Generator
+
+.left[
+```asciidrawing
+    entropy
+  +--- |
+  |    v
+  | +-----+
+  | |     +-+
+  | |  E  | | alg
+  | |     |<+
+  | +-----+
+  +--> | cryptohash
+       v
+      rnd
+```
+]
+
+Linux: [char/random.c](https://github.com/torvalds/linux/blob/master/drivers/char/random.c)
+* `/dev/random` (блокируется при недостатке энтропии)
+* `/dev/urandom`
+
+Недостаток энтропии на старте системы: сохранять энтропию при выключении и восстанавливать.
+
+ * [Widespread Weak Keys in Network Devices](https://factorable.net/)
+ * [Weak Keys Remain Widespread in Network Devices](https://www.cis.upenn.edu/~nadiah/papers/weak-keys/weak-keys.pdfA)
 
 
 
