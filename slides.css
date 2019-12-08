@@ -41,6 +41,10 @@
 	max-width: 100%;
 }
 
+.f75img img {
+	max-width: 75%;
+}
+
 .sub {
 	font-size: .83em;
 	vertical-align: sub;
