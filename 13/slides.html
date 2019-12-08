@@ -15,13 +15,11 @@ class: title, center, middle
 
 ## Кеши и мультипроцессирование
 ---
-# Литература
+# Кеш
 
 * U. Drepper. What Every Programmer Should Know About Memory
 * P. McKenney. Memory Barriers: a Hardware View for Software Hackers
-
----
-# Кеш
+ * https://mirrors.edge.kernel.org/pub/linux/kernel/people/paulmck/perfbook/perfbook.html
 
 .left[
 ```asciidrawing cut
@@ -289,9 +287,9 @@ void bar(void) {
 b - M(cpu0), a - S
 0: a -> store buf, inv a>
         1: read b >
-0: store b, read b <, read resp b >
         1: inv a <, a -> inv q, inv ack a >
-        1: read resp b <, read a
+0: store b, read b <, read resp b==1 >
+        1: read resp b==1 <, read a
         1: inv a apply
 ```
 ---
