@@ -10,7 +10,7 @@
     <textarea id="source">
 
 1. [Введение](#intro)
-2. [Взаимодействие ОС и программы](#os-app-interaction)
+2. [Определение операционной системы](#os-definition)
 3. [Управление памятью](#mem-management)
 4. [Процессы](#processes)
 5. [Невытесняющее планирование](#nonpreempt-scheduling)
@@ -64,8 +64,8 @@ name: intro
 Третье поколение (1965-1980):
 * интегральные схемы
 * программно-совместимые машины: ОS/360
-* пакетная обработка + многозадачность: во время ожиданий операций ввода/вывода запускалась другая задача
-* spooling: по мере завершения задач происходит подгрузка новых
+* spooling
+* многозадачность
 * разделение времени: CTSS, MULTICS, UNIX
 
 ---
@@ -87,42 +87,80 @@ name: intro
 
 .it[P. Brinch Hansen, The evolution of operating systems]
 
+<!--
 The author looks back on the first half century of operating systems and selects his favorite papers on classic operating systems.
-
 These papers span the entire history of the field from the batch processing systems of the 1950s to the distributed systems of the 1990s.
-
 Each paper describes an operating system that combines significant ideas in an elegant way.
-
 Most of them were written by the pioneers who had the visions and the drive to make them work.
-
 The author summarizes each paper and concludes that operating systems are based on a surprisingly small number of ideas of permanent interest.
+-->
+
+> Автор оглядывается на первые полвека сущестования операционных систем и отбирает лучшие статьи о классических операционных системах.
+> Эти статьи охватывают всю историю этой области, начиная с систем пакетной обработки в 1950-ых, заканчивая распределёнными системаами в 1990-ых.
+> Каждая статья описыват операционную систему, которая совмещает значительные идеи элегантным способом.
+> Большинство из них написано пионерами, которые обладали видением и энтузиазмом чтобы претворить их в жизнь.
+> Автор делает выжимку из каждой статьи и делает вывод, что операционные системы основаны на удивительно небольшом количестве идей, которые всегда будут интересны.
+
+---
+## Open Shop: the idea of operating systems
+
+* Каждому пользователю предоставлялся промежуток времени для работы на машине
+* Существенную часть времени пользователь подготавливал окружение для работы
+* Появляется идея об операцонной системе, призванная снизить накладные расходы на работу. "Если бы [наш компьютер] блы бы намного больше, но с ним взаимодейстовали так же, количество возможных пользователей осталось бы прежним"
+
+## Batch Processing: tape batching; first-in, first-out scheduling
+
+* Компютер может планировать свою собственную работу с помощью программного обеспечения
+* Работа пользователей была оптимизированна: им теперь просто не позволялось работать на машине ("closed shop")
+ * Данные и программы подготавливалась на перфокартах
+ * Устройства для чтения карт и печати результатов были узким горлышком
+ * .def[batch processing]: небольшой компьютер переписывал данные со множества перфокарт на ленту, которая потом отправлялась на исполнение в основной компьютер
+ * Пока основной компьютер проводил вычисления (вход и выход на ленте), вспомогательный успевал распечатать данные с предыдущей выходной ленты и подготовить следущую
+ * Задачи на ленте исполнялись последовательно (.def[FIFO]) -- лента была слишком медленная для произвольного доступа
+ * Чем больше задач запланировано на один раз, тем меньше простоя и тем дольше пользователь ждал результатов
 
 ---
 
-0. Open Shop
- * The idea of operating systems
-0. Batch Processing
- * Tape batching
- * First-in, first-out scheduling
-0. Multiprogramming
- * Processor multiplexing
- * Indivisible operations
- * Demand paging
- * Input/output spooling
- * Priority scheduling
- * Remote job entry
-0. Timesharing
- * Simultaneous user interaction
- * On-line file systems
-0. Concurrent Programming
- * Hierarchical systems
- * Extensible kernels
- * Parallel programming concepts
- * Secure parallel languages
-0. Personal Computing
- * Graphic user interfaces
-0. Distributed Systems
- * Remote servers
+## Multiprogramming: processor multiplexing, indivisible operations, demand paging, input/output spooling, priority scheduling, remote job entry
+
+* 1960: появление оперативной памяти, вторичной памяти с произвольным доступом, аппаратных прерываний
+* .def[Multiprogramming]: симуляция одновременной работы нескольких программ и одновременная обработка операций ввода/вывода
+ * .def[spooling]: обработка прерываний параллельно с вычислением, простейшая форма multiprogramming
+* Становится возможна политика "самая-короткая-задача", т.к. задачи и промежуточные вычисления хранятся на жёстких дисках с быстрым произвольным доступом
+* Подгрузка страниц по запросу позволяла иметь прозрачное взаимодейтсвие с памятью и диском
+
+## Timesharing: simultaneous user interaction, on-line file systems
+
+* .def[Разделение времени]: одновременное взаимодействие со многими пользователями.
+У каждого есть отдельная консоль, компьютер может реагировать на каждое нажатие.
+Пользовательские задачи занимают относительно малое количество времени, нужно быстрое переключение между задачами.
+* Иерархическая файловай система с мгновенным доступом к файлам
+
+---
+## Concurrent Programming: hierarchical systems, extensible kernels, parallel programming concepts, secure parallel languages
+
+* Борьба со сложностью операционных систем
+* .def[Иерархическая система]: несколько программных уровней, преобразующих физческую машину в более понятную абстрактную
+* Зарождение параллельного программирования: семафора, корутины,.. и безопасных языков программирования
+* Появление .def[ядра] операционной системы; отделение политики от реализации
+
+## Personal Computing: graphic user interfaces
+
+* Графический дисплей, мышь, Ethernet
+* Персональные компьютеры изначально сильно проще, чем большие машины
+* ... программное обеспечение тоже, включая языки программирования
+
+## Distributed Systems: remote servers
+
+* Серверы предоставляют ресурсы клиентам
+* Удалённый вызов процедур: насколько надёжен?
+* Большинство распределённых систем основано на относительно операционных системах
+
+---
+class: title, center, middle
+name: os-definition
+
+## Определение операционной системы
 
 ---
 # Операционная система
@@ -146,14 +184,6 @@ The author summarizes each paper and concludes that operating systems are based 
 2. .def[менеджер ресурсов]:
  * временных
  * пространственных
-
----
-class: title, center, middle
-name: os-app-interaction
-
-# Операционные системы
-
-## Взаимодействие ОС и программы
 
 ---
 # ОС - виртуальная машина
