@@ -1,3 +1,4 @@
+#!/bin/awk -f
 $1 == "---" { anchor = "" }
 $1 == "name:" { anchor = $2 }
 anchor && match($0, /^#+ (.*)$/, m) {
