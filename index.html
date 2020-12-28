@@ -379,7 +379,7 @@ int main() {
 ```c
 void hnd(int sig, siginfo_t *info, void *ctx) { ... }
 int main() {
-       struct sigaction act = { .sa_sigaction = sighnd };
+       struct sigaction act = { .sa_sigaction = hnd };
        sigaction(SIGSEGV, &act, NULL);
 ```
 
