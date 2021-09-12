@@ -107,4 +107,9 @@ function asciidrawing(text) {
 var e = document.getElementById('source');
 e.textContent = asciidrawing(e.textContent);
 
-var slideshow = remark.create();
+var slideshow = remark.create({
+    slideNumberFormat: '%current%',
+    highlightLines: true,
+    highlightSpans: true,
+});
+
