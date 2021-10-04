@@ -1400,12 +1400,24 @@ C.sub[i] = T.sub[i] - T.sub[i-1]
 Как синхронизировать ожидание времени и прерывание?
 
 ```
-void sched_sleep(unsigned ms) {
-        int endtime = sched_gettime() + ms;
-        int curtime;
-        while (sched_gettime() <= endtime) {
-              // pause() ? -- но можем пропутсить
+int cur_time;
+int hw_timer_pending;
+
+hw_timer_hnd() {
+        cur_time += 1;
+        hw_timer_pending = soft_timers_remain();
+        if (hw_timer_pending) {
+              hw_timer_request_irq(1/*timeout*/, &hw_timer_hnd);
         }
+}
+
+void sched_sleep(unsigned ms) {
+        int endtime = cur_time + ms;
+        assert(hw_timer_pending);
+        while (cur_time <= endtime) {
+              pause();
+        }
+}
 ```
 
 ---
