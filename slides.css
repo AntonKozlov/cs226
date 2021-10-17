@@ -29,6 +29,11 @@ body { font-family: 'Droid Serif'; }
 	font-size: 20px;
 }
 
+.remark-slide h1 {
+	margin-top: 0;
+}
+
+
 .fsmall {
 	font-size: 75%;
 }
