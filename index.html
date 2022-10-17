@@ -353,7 +353,7 @@ name: mem-management
 * Next Fit
 * Worst Fit, Optimal Fit, Half Fit
 
-<!--QCONT: организация списка свободных -->
+ <!--QCONT: организация списка свободных -->
 Добавление в список свободных:
 * LIFO
 * FIFO (*)
@@ -1045,15 +1045,14 @@ $ app3 ; app4
 .def[Политика] - алгоритм выбора следующей задачи
 
 <!--QCONT: FIFO -->
+
  * FIFO
 <!--QCONT: самая короткая -->
  * Наиболее короткая сначала: (добавляем "время работы" к задаче)
-
 ```
 t10: task1
 t20: task2
 ```
-
 Важно: уменьшаем среднее время отклика
 
  * Наиболее приоритетная сначала:
@@ -1066,7 +1065,6 @@ p20: task2
 
  * С учётом принадлежности пользователю:
 <!--QCONT: с учётом пользователей -->
-
 ```
 task1 (petya)
 task2 (petya)
@@ -1077,7 +1075,6 @@ task3 (vasya)
 
  * С указанием крайнего времени завершения (deadline)
 <!--QCONT: deadline -->
-
 ```
 d10: task1
 d20: task2
@@ -1484,8 +1481,12 @@ hw_timer_hnd() {
 void sched_sleep(unsigned ms) {
         int endtime = cur_time + ms;
         assert(hw_timer_pending);
-        while (cur_time <= endtime) {
+        while (cur_time <= endtime && hw_timer_pending) {
               pause();
+        }
+
+        if (!hw_timer_pending) {
+              // ...
         }
 }
 ```
