@@ -1,6 +1,7 @@
 #!/bin/bash
 
-REPO=os226-2021
+Y=$(date +%Y)
+REPO=os226-$Y
 
 if ! [ $GITHUB_TOKEN ]; then
         echo "no GITHUB_TOKEN env"
@@ -16,7 +17,7 @@ getpulls() {
                         -H "Authorization: bearer $GITHUB_TOKEN" \
                         -d @- <<EOF > page.json
                 {"query" : "query{
-                repository(owner: \"AntonKozlov\", name: \"os226-2021\") {
+                repository(owner: \"AntonKozlov\", name: \"os226-$Y\") {
                     pullRequests(first: 100 $after) {
                       edges {
                         node {
@@ -62,6 +63,7 @@ calcstat() {
         c = 0
 }
 !(labels["accepted"] || \
+  labels["late"]     || \
   labels["partial"]  || \
   labels["issue"]    || \
   labels["invalid"]  || \
@@ -72,7 +74,10 @@ calcstat() {
 labels["accepted"] {
         c += 1
 }
-labels["partial"] {
+labels["late"] && nl != 1 {
+        printf "Wrong number of labels: %s\n", $2 > "/dev/stderr"
+}
+labels["partial"] || labels["late"] {
         c += 0.5
 }
 labels["defenced"] {
@@ -89,7 +94,7 @@ labels["hw12"] {
 }
 END {
         for (i in s)
-                printf "%16s: %d\n", i, s[i]
+                printf "%24s: %.1f\n", i, s[i]
 }
 ' pulls.txt | sort -nrk 2
 }
